@@ -1,0 +1,9 @@
+node_modules/**/*
+desktop-build/
+dist/
+release/
+*.pvk
+*.spc
+*.tgz
+.idea
+.DS_Store

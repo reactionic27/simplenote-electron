@@ -1,0 +1,199 @@
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+import highlight from 'highlight.js';
+import showdown from 'showdown';
+import xssFilter from 'showdown-xss-filter';
+import { get, debounce, invoke, noop } from 'lodash';
+import analytics from './analytics';
+import { viewExternalUrl } from './utils/url-utils';
+import NoteContentEditor from './note-content-editor';
+
+const saveDelay = 2000;
+
+const markdownConverter = new showdown.Converter({ extensions: [xssFilter] });
+markdownConverter.setFlavor('github');
+
+const renderToNode = (node, content) => {
+  node.innerHTML = markdownConverter.makeHtml(content);
+  node.querySelectorAll('pre code').forEach(highlight.highlightBlock);
+};
+
+export class NoteDetail extends Component {
+  static propTypes = {
+    dialogs: PropTypes.array.isRequired,
+    filter: PropTypes.string.isRequired,
+    fontSize: PropTypes.number,
+    onChangeContent: PropTypes.func.isRequired,
+    note: PropTypes.object,
+    previewingMarkdown: PropTypes.bool,
+    showNoteInfo: PropTypes.bool.isRequired,
+    storeFocusEditor: PropTypes.func,
+    storeHasFocus: PropTypes.func,
+  };
+
+  static defaultProps = {
+    storeFocusEditor: noop,
+    storeHasFocus: noop,
+  };
+
+  componentWillMount() {
+    this.queueNoteSave = debounce(this.saveNote, saveDelay);
+    document.addEventListener('copy', this.copyRenderedNote, false);
+  }
+
+  componentDidMount() {
+    const { previewingMarkdown } = this.props;
+    this.props.storeFocusEditor(this.focusEditor);
+    this.props.storeHasFocus(this.hasFocus);
+
+    // Ensures note gets saved if user abruptly quits the app
+    window.addEventListener('beforeunload', this.queueNoteSave.flush);
+
+    if (previewingMarkdown) {
+      this.updateMarkdown();
+    }
+  }
+
+  focusEditor = () => this.focusContentEditor && this.focusContentEditor();
+
+  saveEditorRef = ref => (this.editor = ref);
+
+  isValidNote = note => note && note.id;
+
+  componentWillReceiveProps() {
+    this.queueNoteSave.flush();
+  }
+
+  componentDidUpdate(prevProps) {
+    const { note, previewingMarkdown, filter } = this.props;
+    const content = get(note, 'data.content', '');
+
+    // Focus the editor for a new, empty note when not searching
+    if (this.isValidNote(note) && content === '' && filter === '') {
+      invoke(this, 'editor.focus');
+    }
+
+    const prevContent = get(prevProps, 'note.data.content', '');
+    const nextContent = get(this.props, 'note.data.content', '');
+
+    if (
+      (previewingMarkdown &&
+        (prevProps.note !== note || prevContent !== nextContent)) ||
+      (!prevProps.previewingMarkdown && this.props.previewingMarkdown)
+    ) {
+      this.updateMarkdown();
+    }
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('beforeunload', this.queueNoteSave.flush);
+    document.removeEventListener('copy', this.copyRenderedNote, false);
+  }
+
+  copyRenderedNote = event => {
+    const { previewingMarkdown, showNoteInfo, dialogs } = this.props;
+    // Only copy the rendered content if we're in the preview mode
+    if (!previewingMarkdown) {
+      return true;
+    }
+
+    // Only copy if not viewing the note info panel or a dialog
+    if (showNoteInfo || dialogs.length > 0) {
+      return true;
+    }
+
+    // Only copy the rendered content if nothing is selected
+    if (!document.getSelection().isCollapsed) {
+      return true;
+    }
+
+    const node = document.createDocumentFragment();
+    const div = document.createElement('div');
+    renderToNode(div, this.props.note.data.content);
+    node.appendChild(div);
+
+    event.clipboardData.setData('text/plain', div.innerHTML);
+    event.preventDefault();
+  };
+
+  hasFocus = () => this.editorHasFocus && this.editorHasFocus();
+
+  onPreviewClick = event => {
+    // open markdown preview links in a new window
+    for (let node = event.target; node !== null; node = node.parentNode) {
+      if (node.tagName === 'A') {
+        event.preventDefault();
+        viewExternalUrl(node.href);
+        break;
+      }
+    }
+  };
+
+  saveNote = content => {
+    const { note } = this.props;
+
+    if (!this.isValidNote(note)) return;
+
+    this.props.onChangeContent(note, content);
+    analytics.tracks.recordEvent('editor_note_edited');
+  };
+
+  storeEditorHasFocus = f => (this.editorHasFocus = f);
+
+  storeFocusContentEditor = f => (this.focusContentEditor = f);
+
+  storePreview = ref => (this.previewNode = ref);
+
+  updateMarkdown = () => {
+    if (!this.previewNode) {
+      return;
+    }
+
+    renderToNode(this.previewNode, this.props.note.data.content);
+  };
+
+  render() {
+    const { filter, fontSize, previewingMarkdown } = this.props;
+
+    const content = get(this.props, 'note.data.content', '');
+    const divStyle = { fontSize: `${fontSize}px` };
+
+    return (
+      <div className="note-detail">
+        {previewingMarkdown && (
+          <div
+            ref={this.storePreview}
+            className="note-detail-markdown theme-color-bg theme-color-fg"
+            onClick={this.onPreviewClick}
+            style={divStyle}
+          />
+        )}
+
+        {!previewingMarkdown && (
+          <div
+            className="note-detail-textarea theme-color-bg theme-color-fg"
+            style={divStyle}
+          >
+            <NoteContentEditor
+              ref={this.saveEditorRef}
+              storeFocusEditor={this.storeFocusContentEditor}
+              storeHasFocus={this.storeEditorHasFocus}
+              content={content}
+              filter={filter}
+              onChangeContent={this.queueNoteSave}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
+const mapStateToProps = ({ appState: state }) => ({
+  dialogs: state.dialogs,
+  filter: state.filter,
+  showNoteInfo: state.showNoteInfo,
+});
+
+export default connect(mapStateToProps)(NoteDetail);

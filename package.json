@@ -1,0 +1,112 @@
+{
+  "name": "simplenote",
+  "description": "Light, clean, and free. Simplenote is modern note taking app available for iOS, Android, Mac, Windows, Linux, and the web.",
+  "author": {
+    "name": "Automattic, Inc.",
+    "email": "support@simplenote.com"
+  },
+  "productName": "Simplenote",
+  "version": "1.1.3",
+  "main": "desktop/index.js",
+  "license": "GPL-2.0",
+  "homepage": "https://simplenote.com",
+  "scripts": {
+    "test": "jest",
+    "build": "NODE_ENV=development npm run build:dll && npm run build:app",
+    "build:app": "webpack --config ./webpack.config.js",
+    "build:dll": "webpack --config ./webpack.config.dll.js",
+    "build:prod": "NODE_ENV=production webpack -p --config ./webpack.config.dll.js && webpack -p --config ./webpack.config.js",
+    "format": "prettier --write {desktop,lib,sass}/{**/,*}.{js,json,jsx,sass}",
+    "lint": "eslint --ext .js --ext .jsx lib",
+    "start": "NODE_ENV=hot npm run build && webpack-dev-server --config ./webpack.config.js --content-base dist --host 0.0.0.0 --port 4000 --hot --inline"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Automattic/simplenote-electron.git"
+  },
+  "engines": {
+    "node": ">= 7.9.0",
+    "npm": ">= 4.2.0"
+  },
+  "browserslist": [
+    "Chrome >= 58"
+  ],
+  "jest": {
+    "rootDir": "lib",
+    "testRegex": "(/test/.*\\.jsx?)|(test\\.jsx?)$"
+  },
+  "prettier": {
+    "bracketSpacing": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "autoprefixer": "7.1.3",
+    "babel-core": "6.26.0",
+    "babel-eslint": "7.2.3",
+    "babel-jest": "20.0.3",
+    "babel-loader": "7.1.2",
+    "babel-plugin-transform-class-properties": "6.24.1",
+    "babel-plugin-transform-object-rest-spread": "6.26.0",
+    "babel-preset-env": "1.6.1",
+    "babel-preset-es2015": "6.24.1",
+    "babel-preset-react": "6.24.1",
+    "classnames": "2.2.5",
+    "css-loader": "0.28.9",
+    "electron": "1.7.11",
+    "electron-builder": "20.2.0",
+    "electron-packager": "9.1.0",
+    "enzyme": "2.9.1",
+    "eslint": "4.18.0",
+    "eslint-config-prettier": "2.9.0",
+    "eslint-loader": "1.9.0",
+    "eslint-plugin-jest": "21.12.1",
+    "eslint-plugin-prettier": "2.6.0",
+    "eslint-plugin-react": "7.6.1",
+    "html-webpack-plugin": "2.30.1",
+    "jest-cli": "22.3.0",
+    "json-loader": "0.5.7",
+    "node-sass": "4.7.2",
+    "postcss-loader": "2.1.0",
+    "prettier": "1.10.2",
+    "react-addons-test-utils": "15.6.2",
+    "react-dom": "16.2.0",
+    "react-onclickoutside": "6.7.1",
+    "react-test-renderer": "16.2.0",
+    "redbox-react": "1.5.0",
+    "sass-loader": "6.0.6",
+    "style-loader": "0.20.2",
+    "webpack": "3.11.0",
+    "webpack-dev-server": "2.11.1"
+  },
+  "dependencies": {
+    "cookie": "0.3.1",
+    "create-hash": "1.1.3",
+    "draft-js": "0.10.5",
+    "draft-js-simpledecorator": "1.0.2",
+    "electron-window-state": "4.1.1",
+    "highlight.js": "9.12.0",
+    "jszip": "3.1.5",
+    "lodash": "4.17.5",
+    "moment": "2.20.1",
+    "promise": "7.1.1",
+    "prop-types": "15.6.0",
+    "react": "16.2.0",
+    "react-addons-shallow-compare": "15.6.2",
+    "react-addons-update": "15.6.2",
+    "react-overlays": "0.8.3",
+    "react-redux": "5.0.7",
+    "react-virtualized": "9.18.5",
+    "redux": "3.7.2",
+    "redux-localstorage": "0.4.1",
+    "redux-thunk": "2.2.0",
+    "sanitize-filename": "1.6.1",
+    "serve-favicon": "2.4.5",
+    "showdown": "1.8.6",
+    "showdown-xss-filter": "0.2.0",
+    "simperium": "0.3.1"
+  },
+  "optionalDependencies": {
+    "appdmg": "0.5.2"
+  }
+}
